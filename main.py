@@ -15,7 +15,7 @@ mp = Map_generator(screen, 10, 10)
 pl = Player(screen, WIDTH // 2, HEIGHT // 2, mp)
 
 keys = set()
-angle = 0
+angle = 1
 while on_going:
     Clock.tick(60)
     screen.fill(colors['window'])
