@@ -11,7 +11,7 @@ colors = {
 }
 Clock = pygame.time.Clock()
 on_going = True
-mp = Map_generator(screen, 10, 10)
+mp = Map_generator(screen, 25, 25)
 pl = Player(screen, WIDTH // 2, HEIGHT // 2, mp)
 
 keys = set()
@@ -21,6 +21,7 @@ while on_going:
     screen.fill(colors['window'])
     mp.draw()
     for event in pygame.event.get():
+
         if event.type == pygame.QUIT:
             exit()
         if event.type == pygame.KEYDOWN:
@@ -37,6 +38,8 @@ while on_going:
                 pl.speed_mv = 15
             if event.key == 1073742048:
                 pl.angle += 180
+            if event.key == 32:
+                pl.shoot()
 
         if event.type == pygame.KEYUP:
             keys.discard(event.key)

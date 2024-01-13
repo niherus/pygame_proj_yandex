@@ -1,117 +1,116 @@
-import pygame, math
-class Player:
-    def __init__(self, screen, x, y, cur_map, scale=2, path='alien'):
-        self.pos = x, y
-        self.map = cur_map
-        self.scale = scale
-        self.frames = self.import_images(path, self.scale)
-        self.angle = 0
+import math
+import pygame
+import abstract
+
+
+class Player(abstract.Object):
+    def __init__(self,  screen, level, path, pos, size, hit_rect=None, z_scale=1):
+        x, y = pos[0] - level.st_pos[0], pos[1] - level.st_pos[1]
+        super().__init__(screen, level, '3D', path, (x, y), size, z_scale=z_scale)
         self.move = ''
         self.rotate = ''
-        self.screen = screen
-        self.move_frame = 200, 200
+        self.move_frame = 400, 400
         self.speed_mv = 5
         self.speed_rt = 1
-    def import_images(self, path, scale):
-        images = []
-        for i in range(42):
-            img = pygame.image.load(f'{path}\\{i}.png')
-            images.append(pygame.transform.scale_by(img, scale))
-        return images
+        self.energy = 100
+        self.hp = 100
+        self.bullets_in_shoot = []
+        self.keys = set()
+        self.status = '1'
 
     def draw(self):
-        for i, img in enumerate(self.frames):
-            r_img = pygame.transform.rotate(img, self.angle)
-            rect = r_img.get_rect()
-            rect.center = (self.pos[0], self.pos[1] - i * self.scale)
-            self.screen.blit(r_img, rect)
-        #print(self.map.get_cell_pos(self.pos))
+        super().draw()
+        for bullet in self.bullets_in_shoot:
+            bullet.update()
+
+    def shoot(self):
+        pos = self.pos[0], self.pos[1]
+        vec = -math.cos(self.angle * math.pi / 180), math.sin(self.angle * math.pi / 180)
+        self.bullets_in_shoot.append(Bullet(self.screen, self, self.level, 'rocket', pos, (50, 16), vector=vec))
+
     def rotate_space(self):
         if self.rotate == 'left':
             self.angle -= self.speed_rt
 
         if self.rotate == 'right':
             self.angle += self.speed_rt
-    def inside_map(self, x, y):
-
-        x_calc1, y_calc1 = (self.map.borders[1][0] - x + self.map.st_pos[0], self.map.borders[1][1] - y + self.map.st_pos[1])
-        x_calc2, y_calc2 = (self.map.borders[2][0] - x + self.map.st_pos[0], self.map.borders[2][1] - y + self.map.st_pos[1])
-        a1, a2 = math.acos(-1 * y_calc1 / math.hypot(x_calc1, y_calc1)) * 180 / math.pi, math.acos(y_calc2 / math.hypot(x_calc2, y_calc2)) * 180 / math.pi
-        return True
-
 
     def move_space(self):
-        dx, dy = self.speed_mv * math.cos(self.angle * math.pi / 180), self.speed_mv * math.sin(self.angle * math.pi / 180)
-        x, y = self.pos
+        dx, dy = (self.speed_mv * math.cos(self.angle * math.pi / 180),
+                  self.speed_mv * math.sin(self.angle * math.pi / 180))
+        x, y = self.pos[0], self.pos[1]
+        xx, yy = self.pos[0] + self.level.st_pos[0], self.pos[1] + self.level.st_pos[1]
         if self.move == 'forward':
-
-            if self.map.inside_map((x - dx, y + dy)):
-                if self.move_frame[0] < x - dx < self.screen.get_width() - self.move_frame[0] and self.move_frame[1] < y + dy < self.screen.get_height() - self.move_frame[1]:
+            if self.level.inside_map((x - dx, y + dy)):
+                if self.move_frame[0] < xx - dx < self.screen.get_width() - self.move_frame[0] and self.move_frame[1] < yy + dy < self.screen.get_height() - self.move_frame[1]:
                     self.pos = x - dx, y + dy
-                elif not self.move_frame[0] < x - dx < self.screen.get_width() - self.move_frame[0] and not self.move_frame[1] < y + dy < self.screen.get_height() - self.move_frame[1]:
-                    self.map.move(dx, -dy)
-                elif not self.move_frame[0] < x - dx < self.screen.get_width() - self.move_frame[0]:
-                    self.pos = x, y + dy
-                    self.map.move(dx, 0)
-                elif not self.move_frame[1] < y + dy < self.screen.get_height() - self.move_frame[1]:
-                    self.pos = x - dx, y
-                    self.map.move(0, -dy)
+                elif not self.move_frame[0] < xx - dx < self.screen.get_width() - self.move_frame[0] and not self.move_frame[1] < yy + dy < self.screen.get_height() - self.move_frame[1]:
+                    self.pos = x - dx, y + dy
+                    self.level.move(dx, -dy)
+                elif not self.move_frame[0] < xx - dx < self.screen.get_width() - self.move_frame[0]:
+                    self.pos = x - dx, y + dy
+                    self.level.move(dx, 0)
+                elif not self.move_frame[1] < yy + dy < self.screen.get_height() - self.move_frame[1]:
+                    self.pos = x - dx, y + dy
+                    self.level.move(0, -dy)
 
         if self.move == 'backward':
-            if self.map.inside_map((x + dx, y - dy)):
-                if self.move_frame[0] < x + dx < self.screen.get_width() - self.move_frame[0] and self.move_frame[1] < y - dy < self.screen.get_height() - self.move_frame[1]:
+            if self.level.inside_map((x + dx, y - dy)):
+                if self.move_frame[0] < xx + dx < self.screen.get_width() - self.move_frame[0] and self.move_frame[1] < yy - dy < self.screen.get_height() - self.move_frame[1]:
                     self.pos = x + dx, y - dy
-                elif not self.move_frame[0] < x + dx < self.screen.get_width() - self.move_frame[0] and not self.move_frame[1] < y - dy < self.screen.get_height() - self.move_frame[1]:
-                    self.map.move(-dx, dy)
-                elif not self.move_frame[0] < x + dx < self.screen.get_width() - self.move_frame[0]:
-                    self.pos = x, y - dy
-                    self.map.move(-dx, 0)
-                elif not self.move_frame[1] < y - dy < self.screen.get_height() - self.move_frame[1]:
-                    self.pos = x + dx, y
-                    self.map.move(0, dy)
-            #self.pos = x + dx, y - dy
+                elif not self.move_frame[0] < xx + dx < self.screen.get_width() - self.move_frame[0] and not self.move_frame[1] < yy - dy < self.screen.get_height() - self.move_frame[1]:
+                    self.pos = x + dx, y - dy
+                    self.level.move(-dx, dy)
+                elif not self.move_frame[0] < xx + dx < self.screen.get_width() - self.move_frame[0]:
+                    self.pos = x + dx, y - dy
+                    self.level.move(-dx, 0)
+                elif not self.move_frame[1] < yy - dy < self.screen.get_height() - self.move_frame[1]:
+                    self.pos = x + dx, y - dy
+                    self.level.move(0, dy)
 
-if __name__ == '__main__':
-    pygame.init()
-    WIDTH, HEIGHT = 800, 800
-    pygame.init()
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    colors = {
-        'window': (40, 40, 150)
-    }
-    Clock = pygame.time.Clock()
-    on_going = True
+    def control(self, event):
+        if event.type == pygame.KEYDOWN:
+            self.keys.add(event.key)
+            if event.key == pygame.K_d:
+                self.rotate = 'left'
+            if event.key == pygame.K_a:
+                self.rotate = 'right'
+            if event.key == pygame.K_w:
+                self.move = 'forward'
+            if event.key == pygame.K_s:
+                self.move = 'backward'
+            if event.key == pygame.K_LSHIFT:
+                self.speed_mv = 15
+            if event.key == pygame.K_LCTRL:
+                self.angle += 180
+            if event.key == 32:
+                self.shoot()
 
-    pl = Player(screen, 500, 500)
+        if event.type == pygame.KEYUP:
+            self.keys.discard(event.key)
+            if not {pygame.K_a, pygame.K_d} & self.keys:
+                self.rotate = ''
+            if not {pygame.K_w, pygame.K_s} & self.keys:
+                self.move = ''
+            if not {pygame.K_LSHIFT} & self.keys:
+                self.speed_mv = 5
 
-    keys = set()
-    angle = 0
-    while on_going:
-        Clock.tick(60)
-        screen.fill(colors['window'])
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                exit()
-            if event.type == pygame.KEYDOWN:
-                keys.add(event.key)
-                if event.key == 100:
-                    pl.rotate = 'left'
-                if event.key == 97:
-                    pl.rotate = 'right'
-                if event.key == 119:
-                    pl.move = 'forward'
-                if event.key == 115:
-                    pl.move = 'backward'
-            if event.type == pygame.KEYUP:
-                keys.discard(event.key)
-                if not {100, 97} & keys:
-                    pl.rotate = ''
-                if not {115, 119} & keys:
-                    pl.move = ''
 
-        pl.draw()
-        pl.rotate_space(10)
-        pl.move_space(2)
-        pygame.display.update()
+class Bullet(abstract.Object):
+    def __init__(self, screen, char, level, path, pos, size, damage=10, speed=25, vector=None, hit_rect=None, z_scale=0.5):
+        super().__init__(screen, level, '3D', path, pos, size, z_scale=z_scale)
+        self.char = char
+        self.damage = damage
+        self.speed = speed
+        self.vector = vector
+        self.status = '1'
+        self.angle = pygame.Vector2(self.vector).angle_to((pygame.Vector2((1, 0))))
 
-    pygame.quit()
+    def update(self):
+        if self.vector is not None:
+            x, y = self.pos
+            dx, dy = self.vector
+            self.pos = x + dx * self.speed, y + dy * self.speed
+            if self.pos[0] + self.level.st_pos[0] < -200 or self.pos[1] + self.level.st_pos[1] < -200 or self.pos[0] + self.level.st_pos[0] > self.screen.get_width() + 200 or  self.pos[1] + self.level.st_pos[1] > self.screen.get_height() + 200:
+                self.char.bullets_in_shoot.remove(self)
+                del self
