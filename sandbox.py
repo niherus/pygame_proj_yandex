@@ -1,6 +1,10 @@
 import os
+import pygame.locals
 import pygame
+import abstract
 
+import numpy as np
+from numba import njit
 '''
 class Rain:
     def __init__(self, screen, speed):
@@ -62,28 +66,4 @@ colors = {
     'window': (40, 40, 150)
 }
 '''
-
-
-class Object(pygame.sprite.Sprite):
-    def __init__(self, image, pos, size, angle):
-        super().__init__()
-        self.pos = pos
-        self.base_image = image
-        self.size = size
-        self.angle = angle
-        self.vec = -1, 0
-        self.rot = 0
-        self.image = pygame.transform.rotate(pygame.transform.scale(self.base_image, self.size), self.angle)
-        self.rect = self.image.get_rect()
-        self.rect.center = self.pos
-
-    def update(self, *args, **kwargs):
-        self.angle += 1
-        self.pos = self.pos[0] + self.vec[0], self.pos[1] + self.vec[1]
-        self.image = pygame.transform.rotate(pygame.transform.scale(self.base_image, self.size), self.angle)
-        self.rect = self.image.get_rect()
-        self.rect.center = self.pos
-        print(1)
-
-
 
