@@ -37,14 +37,14 @@ class Player(Object):
 
     def draw(self):
         super().draw()
-        self.energy -= 0.005
+        self.energy -= 0.001
         self.bullets_in_shoot = list(filter(lambda x: not x.to_kill, self.bullets_in_shoot))
         self.enemies = list(filter(lambda x: not x.to_kill, self.enemies))
         for bullet in self.bullets_in_shoot:
             bullet.update()
 
     def shoot(self):
-        self.energy -= 0.5
+        self.energy -= 1
         shift = 20
         up = 20
         vec = -math.cos(self.angle * math.pi / 180), math.sin(self.angle * math.pi / 180)
@@ -64,7 +64,7 @@ class Player(Object):
         if self.rotate == 'right':
             self.angle += self.speed_rt
         if self.rotate:
-            self.energy -= abs(self.speed_rt) * 0.05
+            self.energy -= abs(self.speed_rt) * 0.01
 
     def move_space(self):
         if self.rotate:
@@ -105,31 +105,32 @@ class Player(Object):
             self.speed_mv *= -1
 
     def control(self, event):
-        if event.type == pygame.KEYDOWN:
-            self.keys.add(event.key)
-            if event.key == pygame.K_d:
-                self.rotate = 'left'
-            if event.key == pygame.K_a:
-                self.rotate = 'right'
-            if event.key == pygame.K_w:
-                self.move = 'forward'
-            if event.key == pygame.K_s:
-                self.move = 'backward'
-            if event.key == pygame.K_LSHIFT:
-                self.max_speed_mv = 15
-            if event.key == pygame.K_LCTRL:
-                self.angle += 180
-            if event.key == pygame.K_SPACE:
-                self.shoot()
+        if self.energy > 0:
+            if event.type == pygame.KEYDOWN:
+                self.keys.add(event.key)
+                if event.key == pygame.K_d:
+                    self.rotate = 'left'
+                if event.key == pygame.K_a:
+                    self.rotate = 'right'
+                if event.key == pygame.K_w:
+                    self.move = 'forward'
+                if event.key == pygame.K_s:
+                    self.move = 'backward'
+                if event.key == pygame.K_LSHIFT:
+                    self.max_speed_mv = 15
+                if event.key == pygame.K_LCTRL:
+                    self.angle += 180
+                if event.key == pygame.K_SPACE:
+                    self.shoot()
 
-        if event.type == pygame.KEYUP:
-            self.keys.discard(event.key)
-            if not {pygame.K_a, pygame.K_d} & self.keys:
-                self.rotate = ''
-            if not {pygame.K_w, pygame.K_s} & self.keys:
-                self.move = ''
-            if not {pygame.K_LSHIFT} & self.keys:
-                self.max_speed_mv = 5
+            if event.type == pygame.KEYUP:
+                self.keys.discard(event.key)
+                if not {pygame.K_a, pygame.K_d} & self.keys:
+                    self.rotate = ''
+                if not {pygame.K_w, pygame.K_s} & self.keys:
+                    self.move = ''
+                if not {pygame.K_LSHIFT} & self.keys:
+                    self.max_speed_mv = 5
 
     def is_dead(self):
         return self.hp > 0 and self.energy > 0

@@ -4,7 +4,11 @@ from abstract import SHIFT, ANGLE
 
 
 class HUD:
-    def __init__(self, screen, char, towers=None):
+    def __init__(self, screen, char):
+        self.max_blink_time = 10
+        self.blink_time = self.max_blink_time
+        self.health_color = (255, 0, 0)
+        self.energy_color = (0, 255, 0)
         self.score_font = pygame.font.SysFont('Comic Sans MS', 16)
         self.score_font_label = pygame.font.SysFont('Comic Sans MS', 20)
         self.screen = screen
@@ -18,7 +22,6 @@ class HUD:
         self.coeff = main_size[0] / gui_size[0]
         self.rect = self.front_layer.get_rect()
         self.rect.bottomright = screen.get_size()
-        self.towers = towers
         self.hud_settings = {
             'heath_bar_shift_x': 424,
             'heath_bar_shift_y': 82,
@@ -61,15 +64,41 @@ class HUD:
                      self.screen.get_height() - self.hud_settings['score_y'] * self.coeff)
         text_surface = self.score_font.render(f'{self.char.score}', False, (0, 255, 0))
         self.screen.blit(text_surface, pos_score)
+        health_tower_attacked = False
+        for enemy in self.char.enemies:
+            if enemy.obj_to_kill is not None and enemy.obj_to_kill.name == "heal_tower":
+                health_tower_attacked = True
+                break
 
         pos_red = (self.screen.get_width() - self.hud_settings['red_x'] * self.coeff,
                    self.screen.get_height() - self.hud_settings['red_y'] * self.coeff)
-        pygame.draw.circle(self.screen, (255, 0, 0), pos_red, 16)
+        pygame.draw.circle(self.screen, self.health_color, pos_red, 16)
+        energy_tower_attacked = False
+        for enemy in self.char.enemies:
+            if enemy.obj_to_kill is not None and enemy.obj_to_kill.name == "energy_tower":
+                energy_tower_attacked = True
+                break
+        if health_tower_attacked or energy_tower_attacked:
+            self.blink_time -= 1
+        else:
+            self.blink_time = self.max_blink_time
+        if self.blink_time == 0:
+
+            self.blink_time = self.max_blink_time
+            if health_tower_attacked:
+                if self.health_color == (255, 0, 0):
+                    self.health_color = (255, 255, 255)
+                else:
+                    self.health_color = (255, 0, 0)
+            if energy_tower_attacked:
+                if self.energy_color == (0, 255, 0):
+                    self.energy_color = (255, 255, 255)
+                else:
+                    self.energy_color = (0, 255, 0)
 
         pos_green = (self.screen.get_width() - self.hud_settings['green_x'] * self.coeff,
                      self.screen.get_height() - self.hud_settings['green_y'] * self.coeff)
-        pygame.draw.circle(self.screen, (0, 255, 0), pos_green, 16)
-
+        pygame.draw.circle(self.screen, self.energy_color, pos_green, 16)
         for enemy in self.char.enemies:
             x_enemy_on_level, y_enemy_on_level = self.get_pos_on_map(enemy.pos)
             if enemy.name == 'croko':

@@ -31,13 +31,13 @@ class LevelGenerator:
             for j in range(self.size[1]):
                 self.rect.center = (mw // 2 + (i * self.w + j * self.w * -1) / 2,
                                     self.h // 2 + (i * ANGLE * self.h + j * ANGLE * self.h) / 2)
-
-                deco = rnd(0, 10 * len(self.deco_lib) - 1)
-                flip = bool(rnd(0, 1))
-                if deco > 9 * len(self.deco_lib):
-                    name = self.deco_lib[deco - 9 * len(self.deco_lib)]
-                    self.deco_list.append(Decoration(self.screen, self, self.textures[name], self.rect.center,
-                                                     name=name, mirror=flip))
+                if not ((i == 1 and j == self.size[1] - 2) or (i == self.size[1] - 2 and j == 1)):
+                    deco = rnd(0, 10 * len(self.deco_lib) - 1)
+                    flip = bool(rnd(0, 1))
+                    if deco > 9 * len(self.deco_lib):
+                        name = self.deco_lib[deco - 9 * len(self.deco_lib)]
+                        self.deco_list.append(Decoration(self.screen, self, self.textures[name], self.rect.center,
+                                                         name=name, mirror=flip))
 
                 self.main_surf.blit(self.plat, self.rect)
 
@@ -82,6 +82,14 @@ class LevelGenerator:
             return True
         return False
 
+    def get_tower_coords(self):
+        mw, mh = self.main_surf.get_size()
+        return {'heal_tower': (mw // 2 + (1 * self.w + (self.size[1] - 2) * self.w * -1) / 2,
+         self.h // 2 + (1 * ANGLE * self.h + (self.size[1] - 2) * ANGLE * self.h) / 2),
+                'energy_tower': (mw // 2 + ((self.size[0] - 2) * self.w + 1 * self.w * -1) / 2,
+         self.h // 2 + ((self.size[0] - 2) * ANGLE * self.h + 1 * ANGLE * self.h) / 2)
+                }
+
 
 class Decoration(Object):
 
@@ -114,7 +122,7 @@ class Decoration(Object):
         super().__init__(screen, level, image_pack,
                          pos, status=status, name=name, hit_rect=hit_rect)
         if mirror:
-            self.image_pack = (pygame.transform.flip(self.image_pack[0], mirror, False), )
+            self.image_pack = (pygame.transform.flip(self.image_pack[0], mirror, False),)
         self.hp = 100
 
     def draw(self):

@@ -21,6 +21,7 @@ class Enemy(Object):
         self.hp = 100
         self.bullets_in_shoot = []
         self.enemies = []
+        self.obj_to_kill = None
 
     def add_enemies(self, list_of_enemies):
         self.enemies.extend(list_of_enemies)
@@ -33,23 +34,26 @@ class Enemy(Object):
 
     def follow_char(self):
         self.deco_to_hit = [deco for deco in self.level.deco_list if deco.status == 1]
-        x0, y0 = self.char.pos
-        x1, y1 = self.pos
-        dx, dy = x1 - x0, y1 - y0
+        self.enemies = [x for x in self.enemies if x.hp > 0]
+        if self.enemies:
+            self.obj_to_kill = min(self.enemies, key=lambda x: math.hypot(x.pos[0] - self.pos[0], x.pos[1] - self.pos[1]))
+            x0, y0 = self.obj_to_kill.pos
+            x1, y1 = self.pos
+            dx, dy = x1 - x0, y1 - y0
 
-        dist = math.hypot(dx, dy)
-        vec = dx / dist, dy / dist
-        self.hit_rect.center = (x1 - vec[0] * self.speed, y1 - vec[1] * self.speed)
-        self.angle = pygame.Vector2(vec).angle_to((1, 0))
-        can_move, hit_thing = self.hit_deco()
-        if ((self.attack_type == 'close' and dist > 70) or dist > 500) and can_move:
-            self.pos = x1 - vec[0] * self.speed, y1 - vec[1] * self.speed
-        elif not can_move:
-            self.bite_object(hit_thing)
-        if dist < 100 and self.attack_type == 'close':
-            self.bite_object(self.char)
-        if dist < 500 and self.attack_type == 'range':
-            self.shoot_object()
+            dist = math.hypot(dx, dy)
+            vec = dx / dist, dy / dist
+            self.hit_rect.center = (x1 - vec[0] * self.speed, y1 - vec[1] * self.speed)
+            self.angle = pygame.Vector2(vec).angle_to((1, 0))
+            can_move, hit_thing = self.hit_deco()
+            if ((self.attack_type == 'close' and dist > 70) or dist > 500) and can_move:
+                self.pos = x1 - vec[0] * self.speed, y1 - vec[1] * self.speed
+            elif not can_move:
+                self.bite_object(hit_thing)
+            if dist < 100 and self.attack_type == 'close':
+                self.bite_object(self.obj_to_kill)
+            if dist < 500 and self.attack_type == 'range':
+                self.shoot_object()
 
     def shoot_object(self):
         if self.strike_frame:
@@ -74,7 +78,6 @@ class Enemy(Object):
         self.bullets_in_shoot = list(filter(lambda x: not x.to_kill, self.bullets_in_shoot))
         for bullet in self.bullets_in_shoot:
             bullet.update()
-
 
 
 
