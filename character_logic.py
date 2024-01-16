@@ -4,9 +4,9 @@ from abstract import Object, Bullet
 
 
 class Player(Object):
-    def __init__(self, screen, level, path, pos, size, z_scale=1.5):
+    def __init__(self, screen, level, image_pack, pos, bullet_image=None, z_scale=1.5):
         x, y = pos[0] - level.st_pos[0], pos[1] - level.st_pos[1]
-        super().__init__(screen, level, '3D', path, (x, y), size, name='player', z_scale=z_scale)
+        super().__init__(screen, level, image_pack, (x, y), name='player', z_scale=z_scale)
         self.move = ''
         self.rotate = ''
         self.move_frame = 400, 400
@@ -14,15 +14,17 @@ class Player(Object):
         self.max_speed_mv = 5
         self.accel_up = 1
         self.accel_down = 0.5
-        self.speed_rt = 1
+        self.speed_rt = 3
         self.energy = 100
         self.hp = 100
+        self.bullet_image = bullet_image
         self.bullets_in_shoot = []
         self.keys = set()
         self.status = 1
         self.hit_rect = pygame.Rect(0, 0, 53, 50)
         self.deco_to_hit = [deco for deco in level.deco_list if deco.status == 1]
         self.enemies = []
+        self.score = 0
 
     def add_enemies(self, list_of_enemies):
         self.enemies.extend(list_of_enemies)
@@ -35,21 +37,25 @@ class Player(Object):
 
     def draw(self):
         super().draw()
+        self.energy -= 0.005
+        self.bullets_in_shoot = list(filter(lambda x: not x.to_kill, self.bullets_in_shoot))
+        self.enemies = list(filter(lambda x: not x.to_kill, self.enemies))
         for bullet in self.bullets_in_shoot:
             bullet.update()
 
     def shoot(self):
+        self.energy -= 0.5
         shift = 20
         up = 20
         vec = -math.cos(self.angle * math.pi / 180), math.sin(self.angle * math.pi / 180)
         ovec = -vec[1], vec[0]
 
         pos = self.pos[0] + ovec[0] * shift, self.pos[1] + ovec[1] * shift - up
-        self.bullets_in_shoot.append(Bullet(self.screen, self, self.level, '3D', 'rocket', pos,
-                                            (50, 16), vector=vec, hit_rect=pygame.Rect(0, 0, 16, 16)))
+        self.bullets_in_shoot.append(Bullet(self.screen, self, self.level, self.bullet_image, pos, "rocket",
+                                            vector=vec, hit_rect=pygame.Rect(0, 0, 40, 40), damage=30))
         pos = self.pos[0] - ovec[0] * shift, self.pos[1] - ovec[1] * shift - up
-        self.bullets_in_shoot.append(Bullet(self.screen, self, self.level, '3D', 'rocket', pos,
-                                            (50, 16), vector=vec, hit_rect=pygame.Rect(0, 0, 16, 16)))
+        self.bullets_in_shoot.append(Bullet(self.screen, self, self.level,  self.bullet_image, pos, "rocket",
+                                            vector=vec, hit_rect=pygame.Rect(0, 0, 40, 40), damage=30))
 
     def rotate_space(self):
         if self.rotate == 'left':
@@ -57,8 +63,12 @@ class Player(Object):
 
         if self.rotate == 'right':
             self.angle += self.speed_rt
+        if self.rotate:
+            self.energy -= abs(self.speed_rt) * 0.05
 
     def move_space(self):
+        if self.rotate:
+            self.energy -= abs(self.speed_mv) * 0.001
         self.deco_to_hit = [deco for deco in self.level.deco_list if deco.status == 1]
         dx, dy = (self.speed_mv * math.cos(self.angle * math.pi / 180),
                   self.speed_mv * math.sin(self.angle * math.pi / 180))
@@ -109,7 +119,7 @@ class Player(Object):
                 self.max_speed_mv = 15
             if event.key == pygame.K_LCTRL:
                 self.angle += 180
-            if event.key == 32:
+            if event.key == pygame.K_SPACE:
                 self.shoot()
 
         if event.type == pygame.KEYUP:

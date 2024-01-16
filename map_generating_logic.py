@@ -8,13 +8,14 @@ from abstract import Object, ANGLE, SHIFT
 
 
 class LevelGenerator:
-    def __init__(self, screen, width=100, height=100):
+    def __init__(self, screen, textures, width=100, height=100):
         self.borders = None
+        self.textures = textures
         self.deco_list = []
-        self.deco_lib = os.listdir('decorations\\')
+        self.deco_lib = [name.split('_')[0] for name in os.listdir('decorations\\')]
         self.screen = screen
         self.size = width, height
-        self.plat = pygame.transform.scale_by(pygame.image.load('ntile.png'), 0.5)
+        self.plat = pygame.image.load('ntile.png')
         self.rect = self.plat.get_rect()
         self.w, self.h = self.rect.size
         self.st_pos = (-width * self.w / 2 + self.screen.get_width() / 2,
@@ -34,10 +35,9 @@ class LevelGenerator:
                 deco = rnd(0, 10 * len(self.deco_lib) - 1)
                 flip = bool(rnd(0, 1))
                 if deco > 9 * len(self.deco_lib):
-                    self.deco_list.append(Decoration(self.screen, self,
-                                                     self.rect.center,
-                                                     self.deco_lib[deco - 9 * len(self.deco_lib)],
-                                                     mirror=flip))
+                    name = self.deco_lib[deco - 9 * len(self.deco_lib)]
+                    self.deco_list.append(Decoration(self.screen, self, self.textures[name], self.rect.center,
+                                                     name=name, mirror=flip))
 
                 self.main_surf.blit(self.plat, self.rect)
 
@@ -52,16 +52,12 @@ class LevelGenerator:
              round(self.h // 2 + ((self.size[0]) * ANGLE * self.h + (self.size[1]) * ANGLE * self.h) / 2) - SHIFT)
         )
 
-        pygame.draw.circle(self.main_surf, (255, 0, 0), self.borders[0], 20)
-        pygame.draw.circle(self.main_surf, (0, 255, 0), self.borders[1], 20)
-        pygame.draw.circle(self.main_surf, (0, 0, 255), self.borders[2], 20)
-        pygame.draw.circle(self.main_surf, (255, 255, 0), self.borders[3], 20)
-
     def move(self, dx, dy):
         self.st_pos = self.st_pos[0] + dx, self.st_pos[1] + dy
 
     def draw(self):
         self.screen.blit(self.main_surf, self.st_pos)
+        self.deco_list = list(filter(lambda x: not x.to_kill, self.deco_list))
 
     @staticmethod
     def distance(p1, p2, p0):
@@ -89,31 +85,36 @@ class LevelGenerator:
 
 class Decoration(Object):
 
-    def __init__(self, screen, level, pos, image, mirror=False):
-        if 'tree' in image:
+    def __init__(self, screen, level, image_pack, pos, name, mirror=False):
+        if 'tree' in name:
             hit_rect = pygame.Rect(0, 0, 60, 40)
             name = 'tree'
-        elif 'stone' in image:
+            status = 1
+        elif 'stone' in name:
             hit_rect = pygame.Rect(0, 0, 90, 30)
             name = 'stone'
-        elif 'cactus1' in image:
+            status = 1
+        elif 'cactus1' in name:
             hit_rect = pygame.Rect(0, 0, 45, 45)
             name = 'cactus'
-        elif 'cactus2' in image:
+            status = 1
+        elif 'cactus2' in name:
             hit_rect = pygame.Rect(0, 0, 25, 30)
             name = 'cactus'
-        elif 'home' in image:
+            status = 1
+        elif 'home' in name:
             hit_rect = pygame.Rect(0, 0, 200, 100)
             name = 'home'
+            status = 1
         else:
             hit_rect = None
             name = 'None'
+            status = 0
 
-        size = pygame.image.load(f'decorations\\{image}').get_size()
-        super().__init__(screen, level, '2D', f'decorations\\{image}',
-                         pos, size, status=int(image[-5]), name=name, hit_rect=hit_rect)
+        super().__init__(screen, level, image_pack,
+                         pos, status=status, name=name, hit_rect=hit_rect)
         if mirror:
-            self.image_pack[0] = pygame.transform.flip(self.image_pack[0], mirror, False)
+            self.image_pack = (pygame.transform.flip(self.image_pack[0], mirror, False), )
         self.hp = 100
 
     def draw(self):
@@ -122,5 +123,4 @@ class Decoration(Object):
             x, y = self.pos[0] + self.level.st_pos[0] - self.hp // 2, self.pos[1] + self.level.st_pos[1] + 50
             pygame.draw.rect(self.screen, (255, 0, 0), (x, y, self.hp, 10))
         elif self.hp <= 0:
-            self.level.deco_list.remove(self)
-            del self
+            self.to_kill = True

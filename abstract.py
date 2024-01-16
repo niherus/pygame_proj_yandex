@@ -1,4 +1,4 @@
-import os
+import gc
 import pygame
 import math
 
@@ -8,22 +8,24 @@ SHIFT = 50
 
 class Object:
 
-    def __init__(self, screen, level, dim, path, pos, size, name,
+    def __init__(self, screen, level, image_pack, pos, name,
                  angle=0, status=0, hit_rect=None, z_scale=1):
         self.screen = screen
         self.level = level
-        self.dim = dim
         self.pos = pos[0], pos[1]
-        self.size = size
-        self.image_pack = self.load(path, dim, size)
+        self.image_pack = image_pack
         self.status = status
         self.hit_rect = hit_rect
         self.z_scale = z_scale
         self.angle = angle
         self.name = name
+        self.to_kill = False
 
     def draw(self):
         if self.hit_rect is not None:
+            #rect = self.hit_rect.copy()
+            #rect.center = self.pos[0] + self.level.st_pos[0], self.pos[1] + self.level.st_pos[1]
+            #pygame.draw.rect(self.screen, (255, 0, 0), rect)
             self.hit_rect.center = self.pos
 
         for i, img in enumerate(self.image_pack):
@@ -39,44 +41,40 @@ class Object:
             return self.hit_rect.colliderect(other_rect)
         return False
 
-    @staticmethod
-    def load(path, dim, size):
-        if dim.upper() == '2D':
-            return [pygame.transform.scale(pygame.image.load(path), size)]
-        elif dim.upper() == '3D':
-            return [pygame.transform.scale(pygame.image.load(f'{path}\\{i}.png'), size)
-                    for i in range(len(os.listdir(path))) if os.path.exists(f'{path}\\{i}.png')]
-        raise ValueError("Wrong dimension type.\nIt's '2D' or '3D' only")
-
 
 class Bullet(Object):
-    def __init__(self, screen, char, level, dim, path, pos, size, damage=10, speed=25, vector=None, hit_rect=None,
+    def __init__(self, screen, char, level, image_pack, pos, name, damage=10, speed=25, vector=None, hit_rect=None,
                  z_scale=0.5):
-        super().__init__(screen, level, dim, path, pos, size, name=path, z_scale=z_scale, hit_rect=hit_rect)
+        super().__init__(screen, level, image_pack, pos, name=name, z_scale=z_scale, hit_rect=hit_rect)
         self.char = char
         self.damage = damage
         self.speed = speed
         self.vector = vector
         self.status = 1
-        self.angle = pygame.Vector2(self.vector).angle_to((pygame.Vector2((1, 0))))
+        self.angle = pygame.Vector2(self.vector).angle_to((pygame.Vector2((-1, 0))))
 
     def shot_someone(self):
         for enemy in self.char.enemies:
             if self.hit_obj(enemy.hit_rect):
                 enemy.hp -= self.damage
-                try:
-                    self.char.bullets_in_shoot.remove(self)
-                except:
-                    pass
+                if self.char.name == 'player':
+                    self.char.score += 1
+                    enemy.strike_frame = enemy.cool_down
+                    if enemy.hp <= 0:
+                        enemy.to_kill = True
+                self.to_kill = True
 
     def update(self):
+        self.shot_someone()
         if self.vector is not None:
             x, y = self.pos
             dx, dy = self.vector
             self.pos = x + dx * self.speed, y + dy * self.speed
+            self.hit_rect.center = self.pos
             if self.pos[0] + self.level.st_pos[0] < -200 or self.pos[1] + self.level.st_pos[1] < -200 or self.pos[0] + \
                     self.level.st_pos[0] > self.screen.get_width() + 200 or \
                     self.pos[1] + self.level.st_pos[1] > self.screen.get_height() + 200:
-                self.char.bullets_in_shoot.remove(self)
+                self.to_kill = True
 
-        self.shot_someone()
+    def __del__(self):
+        gc.collect()

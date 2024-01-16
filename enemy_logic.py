@@ -4,13 +4,14 @@ from abstract import Object, Bullet
 
 
 class Enemy(Object):
-    def __init__(self, screen, level, path, pos, size, char, attack_type='close', z_scale=1):
+    def __init__(self, screen, level, image_pack, pos, char, name, bullet_image=None, attack_type='close', z_scale=1):
         x, y = pos[0] - level.st_pos[0], pos[1] - level.st_pos[1]
-        super().__init__(screen, level, '3D', path, (x, y), size, name=path, z_scale=z_scale, status=1)
+        super().__init__(screen, level, image_pack, (x, y), name=name, z_scale=z_scale, status=1)
         self.hit_rect = pygame.Rect(0, 0, 53, 50)
         self.char = char
         self.attack_type = attack_type
         if attack_type == 'range':
+            self.bullet_image = bullet_image
             self.bullets_in_shoot = []
         self.speed = 5
         self.deco_to_hit = [deco for deco in level.deco_list if deco.status == 1]
@@ -48,9 +49,9 @@ class Enemy(Object):
         if dist < 100 and self.attack_type == 'close':
             self.bite_object(self.char)
         if dist < 500 and self.attack_type == 'range':
-            self.shoot_object(self.char)
+            self.shoot_object()
 
-    def shoot_object(self, other):
+    def shoot_object(self):
         if self.strike_frame:
             self.strike_frame -= 1
         else:
@@ -58,9 +59,8 @@ class Enemy(Object):
             up = 20
             vec = -math.cos(self.angle * math.pi / 180), math.sin(self.angle * math.pi / 180)
             pos = self.pos[0], self.pos[1] - up
-            self.bullets_in_shoot.append(Bullet(self.screen, self, self.level, '2D',
-                                                f'{self.name}\\red_orb.png', pos, (25, 25), vector=vec,
-                                                hit_rect=pygame.Rect(0, 0, 20, 20)))
+            self.bullets_in_shoot.append(Bullet(self.screen, self, self.level, self.bullet_image, pos, 'red_orb',
+                                                vector=vec, hit_rect=pygame.Rect(0, 0, 20, 20)))
 
     def bite_object(self, other):
         if self.strike_frame:
@@ -71,6 +71,7 @@ class Enemy(Object):
 
     def draw(self):
         super().draw()
+        self.bullets_in_shoot = list(filter(lambda x: not x.to_kill, self.bullets_in_shoot))
         for bullet in self.bullets_in_shoot:
             bullet.update()
 
