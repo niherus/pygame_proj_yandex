@@ -1,11 +1,11 @@
 from PIL import Image
 
-path = 'croko\\croko.png'
-outpath = 'croko'
+path = 'images\\boss\\turtle.png'
+outpath = 'images\\boss\\'
 
 img = Image.open(path)
 w, h = img.size
-CROP_SIZE = 90, 28
+CROP_SIZE = 70, 58
 N = h // CROP_SIZE[1]
 
 for i in range(N):

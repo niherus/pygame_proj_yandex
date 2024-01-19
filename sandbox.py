@@ -2,9 +2,9 @@ import os
 import pygame.locals
 import pygame
 import abstract
-
+from map_generating_logic import *
 import numpy as np
-from enemy_logic import Enemy
+from enemy_logic import Enemy, Boss
 from character_logic import Player
 
 '''
@@ -73,72 +73,128 @@ import tracemalloc
 
 def load_texture(path, dim, size):
     if dim.upper() == '2D':
-        return [pygame.transform.scale(pygame.image.load(path), size)]
+        return [pygame.transform.scale(pygame.image.load(path), size).convert_alpha()]
     elif dim.upper() == '3D':
-        return [pygame.transform.scale(pygame.image.load(f'{path}\\{i}.png'), size)
+        return [pygame.transform.scale(pygame.image.load(f'{path}\\{i}.png').convert_alpha(), size)
                 for i in range(len(os.listdir(path))) if os.path.exists(f'{path}\\{i}.png')]
     raise ValueError("Wrong dimension type.\nIt's '2D' or '3D' only")
 
 
-from map_generating_logic import *
+# from map_generating_logic import *
 import tracemalloc, gc
+import numpy
+from random import randint as rnd, choice as ch
 
-tracemalloc.start()
+
+class Particles:
+
+    def __init__(self, screen, level, color_list, radius, count, size, pos, vector, particle_time, name,
+                 life_time=-1, random_particle_size=0, random_particle_time=0):
+        self.screen = screen
+        self.level = level
+        self.color_list = color_list
+        self.radius = radius
+        self.count = count
+        self.size = size
+        self.pos = pos
+        self.vector = vector
+        self.particle_time = particle_time
+        self.name = name
+        self.life_time = life_time
+        if 0 <= random_particle_size < 1:
+            self.random_particle_size = random_particle_size
+        if 0 <= random_particle_time < 1:
+            self.random_particle_time = random_particle_time
+        self.particles = []
+        for _ in range(self.count):
+            self.particles.append(self.make_particle())
+        self.to_kill = False
+
+    def make_particle(self):
+        pos = (rnd(-self.radius, self.radius), rnd(-self.radius, self.radius))
+        size = self.size + rnd(-int(self.size * self.random_particle_size),
+                               int(self.size * self.random_particle_size))
+        color = ch(self.color_list)
+        time = self.particle_time + rnd(-int(self.particle_time * self.random_particle_time),
+                                        int(self.particle_time * self.random_particle_time))
+        return {
+            'pos': pos,
+            'size': size,
+            'color': color,
+            'time': time
+        }
+
+    def update_particle(self):
+        for particle in self.particles:
+            x, y = particle['pos']
+            particle['pos'] = x + self.vector[0], y + self.vector[1]
+            particle['time'] -= 1
+
+        self.particles = [p for p in self.particles if p['time'] != 0]
+        while len(self.particles) < self.count:
+            self.particles.append(self.make_particle())
+
+        if self.life_time > 0:
+            self.life_time -= 1
+        elif self.life_time == 0:
+            self.count = 0
+            self.particles.clear()
+            self.to_kill = True
+
+    def draw(self):
+        for particle in self.particles:
+            x, y = particle['pos']
+            pygame.draw.circle(self.screen, particle['color'],
+                               (self.pos[0] + x + self.level.st_pos[0], self.pos[1] + y + self.level.st_pos[1]),
+                               particle['size'])
+
+
 pygame.init()
 
-WIDTH, HEIGHT = 1900, 1060
+WIDTH, HEIGHT = 1000, 800
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 textures = {
-    'player': load_texture('alien2', '3D', (63, 60)),
-    'rocket': load_texture('rocket', '3D', (50, 16)),
-    'dino': load_texture('dino', '3D', (50, 42)),
-    'red_orb': load_texture('dino\\red_orb.png', '2D', (50, 16)),
-    'croko': load_texture('croko', '3D', (90, 28)),
-    'bone1': load_texture('decorations\\bone1_0.png', '2D', (200, 84)),
-    'bone2': load_texture('decorations\\bone2_0.png', '2D', (60, 38)),
-    'cactus1': load_texture('decorations\\cactus1_1.png', '2D', (70, 110)),
-    'cactus2': load_texture('decorations\\cactus2_1.png', '2D', (70, 308)),
-    'home': load_texture('decorations\\home_1.png', '2D', (200, 250)),
-    'stone1': load_texture('decorations\\stone1_1.png', '2D', (100, 56)),
-    'stone2': load_texture('decorations\\stone2_1.png', '2D', (100, 58)),
-    'tree1': load_texture('decorations\\tree1_1.png', '2D', (300, 744)),
-    'tree2': load_texture('decorations\\tree2_1.png', '2D', (300, 698)),
+    'player': load_texture('images\\alien', '3D', (63, 60)),
+    'rocket': load_texture('images\\rocket', '3D', (50, 16)),
+    'dino': load_texture('images\\dino', '3D', (50, 42)),
+    'red_orb': load_texture('images\\dino\\red_orb.png', '2D', (25, 25)),
+    'croko': load_texture('images\\croko', '3D', (90, 28)),
+    'bone1': load_texture('images\\decorations\\bone1_0.png', '2D', (200, 84)),
+    'bone2': load_texture('images\\decorations\\bone2_0.png', '2D', (60, 38)),
+    'cactus1': load_texture('images\\decorations\\cactus1_1.png', '2D', (70, 110)),
+    'cactus2': load_texture('images\\decorations\\cactus2_1.png', '2D', (70, 308)),
+    'home': load_texture('images\\decorations\\home_1.png', '2D', (200, 250)),
+    'stone1': load_texture('images\\decorations\\stone1_1.png', '2D', (100, 56)),
+    'stone2': load_texture('images\\decorations\\stone2_1.png', '2D', (100, 58)),
+    'tree1': load_texture('images\\decorations\\tree1_1.png', '2D', (300, 744)),
+    'tree2': load_texture('images\\decorations\\tree2_1.png', '2D', (300, 698)),
+    'heal_tower': load_texture('images\\towers\\tower_hp_1.png', '2D', (225, 661)),
+    'energy_tower': load_texture('images\\towers\\tower_energy_1.png', '2D', (225, 661)),
+    'turtle': load_texture('images\\boss', '3D', (540, 348)),
 }
-level = LevelGenerator(screen, textures, 20, 20)
-player = Player(screen, level, textures['player'], (1000, 1000),
-                textures['rocket'])
-class Obj:
-    id = 0
-    def __init__(self):
-        self.id = Obj.id
-        Obj.id += 1
-    def __del__(self):
-        print(self.id)
 
 
-crokos = []
+fps_label = pygame.font.SysFont('Comic Sans MS', 20)
+
+level = LevelGenerator(screen, textures, 1, 1)
 Clock = pygame.time.Clock()
-while True:
-    print(tracemalloc.get_tracemalloc_memory(), len(crokos))
-    Clock.tick(60)
-    screen.fill("white")
-    level.draw()
-    for event in pygame.event.get():
+player = Player(screen, level, textures['player'], (0 // 2, 0 // 2), textures['rocket'])
+fire = Particles(screen, level, [(255, 64, 0), (255, 128, 0), (255, 192, 0)],
+                 10, 50, 5, (0, 0), (0, -2), 20, 'fire', life_time=30,
+                 random_particle_size=0.5, random_particle_time=0.7)
 
+while True:
+
+    Clock.tick(30)
+    screen.fill("white")
+    fire.draw()
+    fire.update_particle()
+    text_surface = fps_label.render(f'FPS: {Clock.get_fps():.2f} ', False, (0, 0, 0))
+    screen.blit(text_surface, (0, 0))
+    for event in pygame.event.get():
         if event.type == pygame.QUIT:
             exit()
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                crokos.append(Obj())
-            if event.key == pygame.K_LCTRL:
-                if crokos:
-                    crokos.pop()
-                    gc.collect()
 
-    pygame.event.clear()
-    #for croko in crokos:
-    #    croko.draw()
     pygame.display.update()
-tracemalloc.stop()

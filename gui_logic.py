@@ -4,7 +4,8 @@ from abstract import SHIFT, ANGLE
 
 
 class HUD:
-    def __init__(self, screen, char):
+    def __init__(self, screen, char, clock):
+        pygame.font.init()
         self.max_blink_time = 10
         self.blink_time = self.max_blink_time
         self.health_color = (255, 0, 0)
@@ -14,8 +15,9 @@ class HUD:
         self.screen = screen
         main_size = self.screen.get_width() // 3, self.screen.get_height() // 3
         self.char = char
-        self.back_layer = pygame.image.load("gui\\back_gui.png")
-        self.front_layer = pygame.image.load("gui\\front_gui.png")
+        self.clock = clock
+        self.back_layer = pygame.image.load("images\\gui\\back_gui.png")
+        self.front_layer = pygame.image.load("images\\gui\\front_gui.png")
         gui_size = self.back_layer.get_size()
         self.back_layer = pygame.transform.scale(self.back_layer, main_size)
         self.front_layer = pygame.transform.scale(self.front_layer, main_size)
@@ -36,11 +38,11 @@ class HUD:
             'score_x': 70,
             'score_y': 50,
             'red_x': 170,
-            'red_y': 204,
+            'red_y': 212,
             'green_x': 53,
-            'green_y': 204,
+            'green_y': 210,
             'level_x': 190,
-            'level_y': 210,
+            'level_y': 212,
             'level_width': 155,
             'level_height': 155,
         }
@@ -69,7 +71,7 @@ class HUD:
             if enemy.obj_to_kill is not None and enemy.obj_to_kill.name == "heal_tower":
                 health_tower_attacked = True
                 break
-
+        towers = [deco.name for deco in self.char.level.deco_list if 'tower' in deco.name]
         pos_red = (self.screen.get_width() - self.hud_settings['red_x'] * self.coeff,
                    self.screen.get_height() - self.hud_settings['red_y'] * self.coeff)
         pygame.draw.circle(self.screen, self.health_color, pos_red, 16)
@@ -83,18 +85,27 @@ class HUD:
         else:
             self.blink_time = self.max_blink_time
         if self.blink_time == 0:
-
             self.blink_time = self.max_blink_time
-            if health_tower_attacked:
+
+            if 'heal_tower' in towers and health_tower_attacked:
                 if self.health_color == (255, 0, 0):
                     self.health_color = (255, 255, 255)
                 else:
                     self.health_color = (255, 0, 0)
-            if energy_tower_attacked:
+            elif 'heal_tower' not in towers:
+                self.health_color = (0, 0, 0)
+            elif not health_tower_attacked:
+                self.health_color = (255, 0, 0)
+
+            if 'energy_tower' in towers and energy_tower_attacked:
                 if self.energy_color == (0, 255, 0):
                     self.energy_color = (255, 255, 255)
                 else:
                     self.energy_color = (0, 255, 0)
+            elif 'energy_tower' not in towers:
+                self.energy_color = (0, 0, 0)
+            elif not energy_tower_attacked:
+                self.energy_color = (0, 255, 0)
 
         pos_green = (self.screen.get_width() - self.hud_settings['green_x'] * self.coeff,
                      self.screen.get_height() - self.hud_settings['green_y'] * self.coeff)
@@ -117,7 +128,10 @@ class HUD:
         pos_score_text = (self.screen.get_width() - self.hud_settings['score_text_x'] * self.coeff,
                           self.screen.get_height() - self.hud_settings['score_text_y'] * self.coeff)
         text_surface = self.score_font_label.render('Счет: ', False, (0, 0, 0))
-        # self.screen.blit(text_surface, pos_score_text)
+        self.screen.blit(text_surface, pos_score_text)
+
+        text_surface = self.score_font_label.render(f'FPS: {self.clock.get_fps():.2f} ', False, (0, 0, 0))
+        self.screen.blit(text_surface, (0, 0))
 
     def get_pos_on_map(self, pos):
         st_x, st_y = (self.screen.get_width() - self.hud_settings['level_x'] * self.coeff,

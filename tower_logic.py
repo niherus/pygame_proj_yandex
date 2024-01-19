@@ -6,16 +6,16 @@ from abstract import *
 class Tower(Object):
 
     def __init__(self, screen, level,  char, image_pack, pos, name):
-        super().__init__(screen, level, image_pack, pos, name, status=1, hit_rect=pygame.Rect(0, 0, 200, 100))
+        super().__init__(screen, level, image_pack, pos, name, status=1, hit_rect=pygame.Rect(*pos, 200, 100))
         self.to_kill = False
         if self.name == 'heal_tower':
             self.effect = 10
-            self.corruption = 1
+            self.corruption = 0.2
             self.max_effect = 10
-            self.cooldown = 60
+            self.cooldown = 30
         elif self.name == 'energy_tower':
             self.effect = 10
-            self.corruption = 0.5
+            self.corruption = 0.1
             self.max_effect = 10
             self.cooldown = 30
         self.distance = 500
@@ -25,7 +25,7 @@ class Tower(Object):
 
     def draw(self):
         super().draw()
-        if 0 < self.hp < 100:
+        if 0 < self.hp < 200:
             x, y = self.pos[0] + self.level.st_pos[0] - self.hp // 2, self.pos[1] + self.level.st_pos[1] + 50
             pygame.draw.rect(self.screen, (255, 0, 0), (x, y, self.hp, 10))
         elif self.hp <= 0:

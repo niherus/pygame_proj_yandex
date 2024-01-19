@@ -12,7 +12,8 @@ class LevelGenerator:
         self.borders = None
         self.textures = textures
         self.deco_list = []
-        self.deco_lib = [name.split('_')[0] for name in os.listdir('decorations\\')]
+        self.deco_lib = [name.split('_')[0] for name in os.listdir('images\\decorations\\')]
+        self.vfx_list = []
         self.screen = screen
         self.size = width, height
         self.plat = pygame.image.load('ntile.png')
@@ -20,7 +21,7 @@ class LevelGenerator:
         self.w, self.h = self.rect.size
         self.st_pos = (-width * self.w / 2 + self.screen.get_width() / 2,
                        -height * self.h / 4 + self.screen.get_height() / 2)
-        self.main_surf = pygame.Surface((width * self.w, height * self.h))
+        self.main_surf = pygame.Surface((width * self.w, height * self.h)).convert_alpha()
         self.main_surf.set_colorkey((0, 0, 0, 0))
         self.generate_all()
 
@@ -95,23 +96,23 @@ class Decoration(Object):
 
     def __init__(self, screen, level, image_pack, pos, name, mirror=False):
         if 'tree' in name:
-            hit_rect = pygame.Rect(0, 0, 60, 40)
+            hit_rect = pygame.Rect(*pos, 60, 40)
             name = 'tree'
             status = 1
         elif 'stone' in name:
-            hit_rect = pygame.Rect(0, 0, 90, 30)
+            hit_rect = pygame.Rect(*pos, 90, 30)
             name = 'stone'
             status = 1
         elif 'cactus1' in name:
-            hit_rect = pygame.Rect(0, 0, 45, 45)
+            hit_rect = pygame.Rect(*pos, 45, 45)
             name = 'cactus'
             status = 1
         elif 'cactus2' in name:
-            hit_rect = pygame.Rect(0, 0, 25, 30)
+            hit_rect = pygame.Rect(*pos, 25, 30)
             name = 'cactus'
             status = 1
         elif 'home' in name:
-            hit_rect = pygame.Rect(0, 0, 200, 100)
+            hit_rect = pygame.Rect(*pos, 200, 100)
             name = 'home'
             status = 1
         else:
@@ -121,6 +122,7 @@ class Decoration(Object):
 
         super().__init__(screen, level, image_pack,
                          pos, status=status, name=name, hit_rect=hit_rect)
+
         if mirror:
             self.image_pack = (pygame.transform.flip(self.image_pack[0], mirror, False),)
         self.hp = 100

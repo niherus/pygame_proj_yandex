@@ -131,6 +131,9 @@ class Player(Object):
                     self.move = ''
                 if not {pygame.K_LSHIFT} & self.keys:
                     self.max_speed_mv = 5
+        else:
+            self.rotate = ''
+            self.move = ''
 
     def is_dead(self):
         return self.hp > 0 and self.energy > 0

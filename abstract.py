@@ -1,7 +1,7 @@
 import gc
 import pygame
 import math
-
+from random import randint as rnd, choice as ch
 ANGLE = math.tan(math.pi / 6)
 SHIFT = 50
 
@@ -22,6 +22,7 @@ class Object:
         self.to_kill = False
 
     def draw(self):
+        self.angle %= 360
         if self.hit_rect is not None:
             #rect = self.hit_rect.copy()
             #rect.center = self.pos[0] + self.level.st_pos[0], self.pos[1] + self.level.st_pos[1]
@@ -77,4 +78,71 @@ class Bullet(Object):
                 self.to_kill = True
 
     def __del__(self):
+        self.level.vfx_list.append(Particles(self.screen, self.level, [(255, 64, 0), (255, 128, 0), (255, 192, 0)],
+                 10, 50, 5, self.pos, (0, -3), 20, 'fire', life_time=20,
+                 random_particle_size=0.5, random_particle_time=0.7))
         gc.collect()
+
+
+class Particles:
+
+    def __init__(self, screen, level, color_list, radius, count, size, pos, vector, particle_time, name,
+                 life_time=-1, random_particle_size=0, random_particle_time=0):
+        self.screen = screen
+        self.level = level
+        self.color_list = color_list
+        self.radius = radius
+        self.count = count
+        self.size = size
+        self.pos = pos
+        self.vector = vector
+        self.particle_time = particle_time
+        self.name = name
+        self.life_time = life_time
+        if 0 <= random_particle_size < 1:
+            self.random_particle_size = random_particle_size
+        if 0 <= random_particle_time < 1:
+            self.random_particle_time = random_particle_time
+        self.particles = []
+        for _ in range(self.count):
+            self.particles.append(self.make_particle())
+        self.to_kill = False
+        self.status = 1
+
+    def make_particle(self):
+        pos = (rnd(-self.radius, self.radius), rnd(-self.radius, self.radius))
+        size = self.size + rnd(-int(self.size * self.random_particle_size),
+                               int(self.size * self.random_particle_size))
+        color = ch(self.color_list)
+        time = self.particle_time + rnd(-int(self.particle_time * self.random_particle_time),
+                                        int(self.particle_time * self.random_particle_time))
+        return {
+            'pos': pos,
+            'size': size,
+            'color': color,
+            'time': time
+        }
+
+    def update_particle(self):
+        for particle in self.particles:
+            x, y = particle['pos']
+            particle['pos'] = x + self.vector[0], y + self.vector[1]
+            particle['time'] -= 1
+
+        self.particles = [p for p in self.particles if p['time'] != 0]
+        while len(self.particles) < self.count:
+            self.particles.append(self.make_particle())
+
+        if self.life_time > 0:
+            self.life_time -= 1
+        elif self.life_time == 0:
+            self.count = 0
+            self.particles.clear()
+            self.to_kill = True
+
+    def draw(self):
+        for particle in self.particles:
+            x, y = particle['pos']
+            pygame.draw.circle(self.screen, particle['color'],
+                               (self.pos[0] + x + self.level.st_pos[0], self.pos[1] + y + self.level.st_pos[1]),
+                               particle['size'])
