@@ -76,7 +76,6 @@ class ShooterWin:
         self.player = Player(self.screen, self.level, self.textures['player'],
                              (width // 2, height // 2),
                              self.textures['rocket'])
-        self.player.score = 0
 
         pos_towers = self.level.get_tower_coords()
         self.level.deco_list = [deco for deco in self.level.deco_list if
