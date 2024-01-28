@@ -1,7 +1,7 @@
 import os
 import pygame.locals
 import pygame
-import abstract
+from abstract import WaveStrike
 from map_generating_logic import *
 import numpy as np
 from enemy_logic import Enemy, Boss
@@ -89,7 +89,7 @@ from random import randint as rnd, choice as ch
 class Particles:
 
     def __init__(self, screen, level, color_list, radius, count, size, pos, vector, particle_time, name,
-                 life_time=-1, random_particle_size=0, random_particle_time=0):
+                 life_time=-1, random_particle_size=.0, random_particle_time=.0):
         self.screen = screen
         self.level = level
         self.color_list = color_list
@@ -185,16 +185,22 @@ fire = Particles(screen, level, [(255, 64, 0), (255, 128, 0), (255, 192, 0)],
                  10, 50, 5, (0, 0), (0, -2), 20, 'fire', life_time=30,
                  random_particle_size=0.5, random_particle_time=0.7)
 
+waves = []
 while True:
 
     Clock.tick(30)
-    screen.fill("white")
-    fire.draw()
-    fire.update_particle()
-    text_surface = fps_label.render(f'FPS: {Clock.get_fps():.2f} ', False, (0, 0, 0))
+    screen.fill("black")
+    for wave in waves:
+        wave.draw()
+        wave.update()
+    waves = [wave for wave in waves if wave.to_kill]
+    text_surface = fps_label.render(f'FPS: {Clock.get_fps():.2f} ', False, (255, 255, 255))
     screen.blit(text_surface, (0, 0))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             exit()
+        if event.type == pygame.MOUSEMOTION:
+            pos = event.pos[0] - level.st_pos[0], event.pos[1] - level.st_pos[1]
+            waves.append(WaveStrike(screen, level, pos, (20, 20), (500, 500), 300))
 
     pygame.display.update()

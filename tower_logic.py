@@ -28,6 +28,7 @@ class Tower(Object):
         if 0 < self.hp < 200:
             x, y = self.pos[0] + self.level.st_pos[0] - self.hp // 2, self.pos[1] + self.level.st_pos[1] + 50
             pygame.draw.rect(self.screen, (255, 0, 0), (x, y, self.hp, 10))
+            self.hp += 0.5
         elif self.hp <= 0:
             self.to_kill = True
         self.hit_rect.center = self.pos

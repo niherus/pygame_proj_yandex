@@ -16,7 +16,7 @@ class LevelGenerator:
         self.vfx_list = []
         self.screen = screen
         self.size = width, height
-        self.plat = pygame.image.load('ntile.png')
+        self.plat = pygame.image.load('images\\tiles\\ntile.png')
         self.rect = self.plat.get_rect()
         self.w, self.h = self.rect.size
         self.st_pos = (-width * self.w / 2 + self.screen.get_width() / 2,

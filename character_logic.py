@@ -22,6 +22,7 @@ class Player(Object):
         self.keys = set()
         self.status = 1
         self.hit_rect = pygame.Rect(0, 0, 53, 50)
+        self.hit_rect.center = self.pos
         self.deco_to_hit = [deco for deco in level.deco_list if deco.status == 1]
         self.enemies = []
         self.score = 0
@@ -35,9 +36,22 @@ class Player(Object):
                 return False
         return True
 
+    def hit_vfx(self):
+        strike = []
+        for vfx in self.level.vfx_list:
+            if self.hit_obj(vfx.hit_rect):
+                strike.append(vfx)
+        return strike
+
     def draw(self):
         super().draw()
         self.energy -= 0.001
+        strike = self.hit_vfx()
+        if strike and [eff for eff in strike if eff.name == 'wave']:
+            self.hp -= 1
+        if strike and  [eff for eff in strike if eff.name == 'fire_breath']:
+            self.hp -= 1
+
         self.bullets_in_shoot = list(filter(lambda x: not x.to_kill, self.bullets_in_shoot))
         self.enemies = list(filter(lambda x: not x.to_kill, self.enemies))
         for bullet in self.bullets_in_shoot:
