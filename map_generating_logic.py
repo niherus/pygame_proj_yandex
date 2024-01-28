@@ -1,9 +1,7 @@
 from random import randint as rnd
-
 import math
 import os
 import pygame
-
 from abstract import Object, ANGLE, SHIFT
 
 

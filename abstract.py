@@ -25,9 +25,6 @@ class Object:
     def draw(self):
         self.angle %= 360
         if self.hit_rect is not None:
-            # rect = self.hit_rect.copy()
-            # rect.center = self.pos[0] + self.level.st_pos[0], self.pos[1] + self.level.st_pos[1]
-            # pygame.draw.rect(self.screen, (255, 0, 0), rect)
             self.hit_rect.center = self.pos
 
         for i, img in enumerate(self.image_pack):
@@ -91,7 +88,6 @@ class Bullet(Object):
 
 
 class Particles:
-
     def __init__(self, screen, level, color_list, radius, count, size, pos, vector, particle_time, name,
                  life_time=-1, random_particle_size=.0, random_particle_time=.0, random_particle_angle=0):
         self.screen = screen

@@ -187,7 +187,6 @@ fire = Particles(screen, level, [(255, 64, 0), (255, 128, 0), (255, 192, 0)],
 
 waves = []
 while True:
-
     Clock.tick(30)
     screen.fill("black")
     for wave in waves:
